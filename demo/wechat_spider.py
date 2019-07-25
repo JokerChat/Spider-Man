@@ -6,10 +6,8 @@
 import requests
 import json
 import time
-import random
 # import pdfkit
 from public.get_database import getDatabase
-import pymysql
 from config.config import *
 test = getDatabase(local_config)
 def get_wx_data(biz,uin,key,next_offset):
