@@ -3,11 +3,11 @@
 # @Time         :2019/7/5 17:08
 # @FileName     :get_database.py
 #IDE            :PyCharm
+from config.config import *
 import pymysql
 import datetime
 from public.log import logger
-from config.config import *
-mylog=logger('操作数据库').get_logger()
+mylog=logger('数据库操作').get_logger()
 class getDatabase(object):
     #初始化数据,读取配置文件
     def __init__(self,config):
@@ -17,18 +17,11 @@ class getDatabase(object):
             mylog.info("############连接数据库成功############")
         except Exception as e:
             mylog.info("############连接失败:{}############".format(e))
-    def close(self):
-        try:
-            self.conn.close()
-            self.cursor.close()
-        except Exception as e:
-            mylog.info("############关闭失败:{}############".format(e))
     def __varchar(self,s):
         # 处理sql语句中的字符串型字典值，在两侧加引号
         if isinstance(s, str):
             return '"' + s + '"'
-        else:
-            return str(s)
+        return str(s)
     def __submit(self,sql):
         result=0
         try:
@@ -41,18 +34,26 @@ class getDatabase(object):
         except Exception as e:
             mylog.info("############提交失败:{}############".format(e))
             return result
-    def __changestr(self,items):
+    def __changestr(self,result_dict):
         """这里是将字典里面的对象信息转换成字符串"""
         try:
-            data=[]
-            for ii in items:
-                result_replace = {k: v.__str__() for k, v in ii.items() if isinstance(v, datetime.datetime)}
-                ii.update(result_replace)
-                data.append(ii)
-            return data
+            if result_dict:
+                result_replace = {k: v.__str__() for k, v in result_dict.items() if isinstance(v, datetime.datetime)}
+                result_dict.update(result_replace)
+            return result_dict
         except Exception as e:
             mylog.info("转换字符串出错:{}".format(e))
-    def select(self,table,**kwargs):
+    def __changedict(self,row=None):
+        """这里是将数据行转换成字段的形式输出"""
+        try:
+            result = dict()
+            columns = [desc[0] for desc in self.cursor.description]
+            for k, v in zip(columns, row):
+                result[k] = v
+            return result
+        except Exception as e:
+            mylog.error('数据行转换字段出错:{}'.format(e))
+    def select_all(self,table,**kwargs):
         '''
         查询数据
         :param table: 表名
@@ -66,9 +67,41 @@ class getDatabase(object):
                 for key,value in kwargs.items():
                     sql=sql +key+'='+self.__varchar(value)+' and '
                 sql=sql[:-5]
-            self.cursor.execute(sql)
-            # mylog.info("############查询成功############")
-            return self.__changestr(self.cursor.fetchall())
+            # mylog.info("############查询语句：{}############".format(sql))
+            count=self.cursor.execute(sql)
+            if count>0:
+                rows=self.cursor.fetchall()
+                dict_rows=[]
+                for row in rows:
+                    dict_item=self.__changedict(row=row)
+                    dict_item=self.__changestr(dict_item)
+                    dict_rows.append(dict_item)
+            mylog.info("############查询成功############")
+            return dict_rows
+        except Exception as e:
+            mylog.info("############查询失败:{}############".format(e))
+    def select_one(self,table,**kwargs):
+        '''
+        查询数据
+        :param table: 表名
+        :param kwargs: 约束条件
+        :return: 返回数据,列表嵌套字典
+        '''
+        try:
+            sql='SELECT * FROM '+table
+            if kwargs:
+                sql =sql+' WHERE '
+                for key,value in kwargs.items():
+                    sql=sql +key+'='+self.__varchar(value)+' and '
+                sql=sql[:-5]
+            # mylog.info("############查询语句：{}############".format(sql))
+            count=self.cursor.execute(sql)
+            if count>0:
+                row=self.cursor.fetchone()
+                dict_item=self.__changedict(row=row)
+                dict_item=self.__changestr(dict_item)
+            mylog.info("############查询成功############")
+            return dict_item
         except Exception as e:
             mylog.info("############查询失败:{}############".format(e))
     def updata(self,table,conditionKey=None,conditionValue=None,**kwargs):
@@ -83,16 +116,16 @@ class getDatabase(object):
         try:
             if conditionKey and conditionValue:
                 if kwargs:
-                    sql ='UPDATE '+table+' SET '
+                    sql ='UPDATE `'+table+'` SET '
                     for key,value in kwargs.items():
-                        sql =sql+key+'='+self.__varchar(value)+' and '
-                    sql=sql[:-5]
-                    sql =sql + ' WHERE '+conditionKey +'='+self.__varchar(conditionValue)
+                        sql =sql+key+'='+self.__varchar(value)+' , '
+                    sql=sql[:-3]
+                    sql =sql + ' WHERE `'+conditionKey +'` ='+self.__varchar(conditionValue)
                     return self.__submit(sql)
                 else:
-                    print('要更新的字段和值不为空')
+                    mylog.info("############要更新的字段和值不为空############")
             else:
-                print('约束字段或者值不能为空')
+                mylog.info("############约束字段或者值不能为空############")
         except Exception as e:
             mylog.info("############更新失败:{}############".format(e))
     def insert(self,table,**kwargs):
@@ -130,7 +163,7 @@ class getDatabase(object):
                 sql=sql[:-5]
                 return self.__submit(sql)
             else:
-                print('约束条件不能为空')
+                mylog.info("############约束条件不能为空############")
         except Exception as e:
             mylog.info("############删除失败:{}############".format(e))
 if __name__=='__main__':
