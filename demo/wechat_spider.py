@@ -10,7 +10,9 @@ import time
 from public.get_database import getDatabase
 from config.config import *
 test = getDatabase(local_config)
-def get_wx_data(biz,uin,key,next_offset):
+next_offset=0
+def get_wx_data(biz,uin,key):
+    global next_offset
     params = {
         '__biz': biz,
         'uin': uin,
@@ -32,7 +34,7 @@ def get_wx_data(biz,uin,key,next_offset):
         general_msg_list = json.loads(data['general_msg_list'])
         list = general_msg_list.get('list')
         offset=data['next_offset']
-        test.updata('wx_config','id',1,next_offset=offset)
+        next_offset=offset
         for i in list:
             if 'app_msg_ext_info' in i.keys():
                 app_msg_ext_info=i['app_msg_ext_info']
@@ -56,22 +58,16 @@ def get_wx_data(biz,uin,key,next_offset):
         return False
     else:
         print('获取文章异常')
-# name='aifou1.pdf'
-# url='https://mp.weixin.qq.com/s?__biz=MjM5NzE1NTMyNg==&amp;mid=2650929551&amp;idx=1&amp;sn=30de26b5ab026c1bf314de41a89d99aa&amp;chksm=bd2b011e8a5c880814eb02d677dd7e0456b11abb31d8d84a1972e81f9756ed394f580d464814&amp;scene=27#wechat_redirect'
-# config=pdfkit.configuration(wkhtmltopdf=r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe")
-# pdfkit.from_url(url, name,configuration=config)
 if __name__ == '__main__':
     test = getDatabase(local_config)
-    data=test.select('wx_config',id=1)[0]
+    data=test.select_one('wx_config',id=1)
     uin='OTIzODk5MjYw'
     biz=data['wx_biz']
-    key='c8b1cdfc5f2a0a52ec96de1937c3edb517aafe5e23725a8c342dd4f906ec2ca8b0a9590366905919baf324244fce6f70c40a46356a5de1880bec74bc5a6ef50aadbc4d8f4966c2ea22fab256d5603c6d'
+    key='c8b1cdfc5f2a0a52770e7981d77ec104b77acbde5698a0e9ef77b274b4e04f7f403fd3385f2818fb5de05cc5acf34a06841f838ab2bbbb769ef4c4e96beb0180b804cd48901bedffa587dfca2f52b7ed'
     index=0
     while 1:
         print(f'********开始抓取公众号第{index + 1}页文章********')
-        data = test.select('wx_config', id=1)[0]
-        next_offset = data['next_offset']
-        is_continue=get_wx_data(biz=biz,uin=uin,key=key,next_offset=next_offset)
+        is_continue=get_wx_data(biz=biz,uin=uin,key=key)
         # 防止和谐，暂停8秒
         time.sleep(8)
         index += 1
