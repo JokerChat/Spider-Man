@@ -8,6 +8,8 @@ import smtplib
 import sys
 from email.mime.text import MIMEText
 from email.header import Header
+
+#未完成的demo
 def sendEmail(messages):
     mail_host = "12345"
     mail_user = "1111"
