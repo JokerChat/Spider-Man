@@ -88,7 +88,7 @@ if __name__ =='__main__':
     b = SendMail(smtp_server="smtp.qq.com",
                  smtp_port=465,
                  smtp_sender="664616581@qq.com",
-                 smtp_senderpassword="uyzfnkjhwdxrbfec",
+                 smtp_senderpassword="xxxxx",
                  smtp_receiver=['664616581@qq.com','1927265398@qq.com'],
                  smtp_subject="测试邮件！！",
                  smtp_body="<p>我的简书地址：https://www.jianshu.com/u/c40cc1114855</p>")
